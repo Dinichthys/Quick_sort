@@ -6,7 +6,19 @@
 #include "my_assert.h"
 #include "logging.h"
 
-int compare (const void* const a, const void* const b, const bool reverse)
+static void skip_non_abc (const char** const s, const int step);
+
+static void skip_non_abc (const char** const s, const int step)
+{
+    ASSERT(s != NULL, "Invalid argument for function skip_non_sym\n");
+
+    while (!(isalpha (**s)) && (**s != '\0'))
+    {
+        *s += step;
+    }
+}
+
+int compare (const void* const a, const void* const b)
 {
     ASSERT(a != NULL, "Invalid argument for function my_strcmp\n");
     ASSERT(b != NULL, "Invalid argument for function my_strcmp\n");
@@ -14,84 +26,101 @@ int compare (const void* const a, const void* const b, const bool reverse)
     const char* s1 = *((const char**) a);
     const char* s2 = *((const char**) b);
 
-    LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n", s1, s2);
+//    LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n", s1, s2);
 
-    const int step = reverse ? -1 : 1;
-
-    while (!(isalpha (*s1)))
-    {
-        s1 += step;
-    }
-
-    while (!(isalpha (*s2)))
-    {
-        s2 += step;
-    }
+    skip_non_abc (&s1, 1);
+    skip_non_abc (&s2, 1);
 
     while ((tolower(*s1) == tolower(*s2)) && (*s1 != '\0'))
     {
-        s1 += step;
-        s2 += step;
+        s1++;
+        s2++;
+
+        skip_non_abc (&s1, 1);
+        skip_non_abc (&s2, 1);
     }
 
     return tolower(*s1) - tolower(*s2);
 }
 
+int compare_r (const void* const a, const void* const b)
+{
+    ASSERT(a != NULL, "Invalid argument for function my_strcmp\n");
+    ASSERT(b != NULL, "Invalid argument for function my_strcmp\n");
+
+    const char* s1 = *((const char**) a);
+    const char* s2 = *((const char**) b);
+
+//    LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n", s1, s2);
+
+    skip_non_abc (&s1, -1);
+    skip_non_abc (&s2, -1);
+
+    while ((tolower(*s1) == tolower(*s2)) && (*s1 != '\0'))
+    {
+        s1--;
+        s2--;
+
+        skip_non_abc (&s1, -1);
+        skip_non_abc (&s2, -1);
+    }
+
+    return tolower(*s1) - tolower(*s2);
+}
 
 void my_qsort(void *const base, const size_t nmemb, const size_t size,
-           int(*compar)(const void *, const void *, bool), const bool reverse)
+              int(*compar)(const void *, const void *))
 {
     ASSERT(base   != NULL, "Invalid argument for function qsort\n");
     ASSERT(compar != NULL, "Invalid argument for function qsort\n");
 
-    char* s1  = (char*) base;
-    char* s2  = ((char*) base) + ((nmemb - 1) * size);
-    char* mid = ((char*) base) + ((nmemb - 1) / 2 * size);
+    char* left   = (char*) base;
+    char* right  = ((char*) base) + ((nmemb - 1) * size);
+    char* mid    = ((char*) base) + ((nmemb - 1) / 2 * size);
 
-    size_t count = 0;
+    size_t count = 1;
     do
     {
-        LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n mid = %p\n"
-                           " *s1 = %p \n %lu\n",
-                           s1, s2, mid, *mid, count);
+        LOG(stderr, DEBUG, " left = %p \n right = %p\n mid = %p\n"
+                           " *mid = %p \n Iteration № %lu\n",
+                           left, right, mid, *mid, count);
         count++;
 
-        while (compar (s1, mid, reverse) < 0)
+        while (compar (left, mid) < 0)
         {
-
-            s1 += size;
+            left += size;
         }
 
-        LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n", s1, s2);
+        LOG(stderr, DEBUG, " left = %p \n right = %p\n", left, right);
 
-        while (compar (s2, mid, reverse) > 0)
+        while (compar (right, mid) > 0)
         {
-            s2 -= size;
+            right -= size;
         }
 
-        LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n", s1, s2);
+        LOG(stderr, DEBUG, " left = %p \n right = %p\n size = %lu\n", left, right, size);
 
         for (size_t i = 0; i < size; i++)
         {
-            char change = s1 [i];
-                           s1 [i] = s2 [i];
-                                    s2 [i] = change;
+            char change =  left [i];
+                           left [i] = right [i];
+                                      right [i] = change;
         }
 
-        s1 += size;
-        s2 -= size;
+        left  += size;
+        right -= size;
 
-        LOG(stderr, DEBUG, " s1 = %p \n s2 = %p\n", s1, s2);
+        LOG(stderr, DEBUG, " left = %p \n right = %p\n", left, right);
     }
-    while (s1 < s2);
+    while (left < right);
 
-    if (s2 > (char*) base)
+    if (right > (char*) base)
     {
-        my_qsort (base, (s1 - (char*) base) / size, size, compar, reverse);
+        my_qsort (base, (right - (char*) base) / size + 1, size, compar);
     }
 
-    if ((char*) base + (nmemb - 1) * size > s1)
+    if ((char*) base + (nmemb - 1) * size > left)
     {
-        my_qsort (base, ((char*) base + (nmemb - 1) * size - s1) / size, size, compar, reverse);
+        my_qsort (left, ((char*) base + (nmemb - 1) * size - left) / size + 1, size, compar);
     }
 }
