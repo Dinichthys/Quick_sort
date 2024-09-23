@@ -96,8 +96,6 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
     char* right  = (char*) base + ((nmemb - 1) * size);
     char* mid    = (char*) base + ( nmemb / 2  * size);
 
-    bool mid_is_swapped = false;
-
     size_t count = 1;
     while (left < right)
     {
@@ -106,14 +104,14 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
                    left, right, mid, count);
         count++;
 
-        while ((left < right) && (compar (left, mid) < 0))
+        while ((left < right) && (compar (left, mid) <= 0) && (left < mid))
         {
             left += size;
         }
 
         LOG(DEBUG, " left = %p \n right = %p\n", left, right);
 
-        while ((left < right) && (compar (right, mid) >= 0))
+        while ((left < right) && (compar (right, mid) >= 0) && (right > mid))
         {
             right -= size;
         }
@@ -124,25 +122,17 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
         {
             vec_swap (left, right, size);
 
-            mid_is_swapped = (left == mid);
+            if (left == mid)
+            {
+                mid = right;
+            }
+            else if (right == mid)
+            {
+                mid = left;
+            }
         }
 
         LOG(DEBUG, " left = %p \n right = %p\n", left, right);
-    }
-
-    if ((compar (left, mid) < 0) || (mid_is_swapped))
-    {
-        left  += size;
-    }
-    else
-    {
-        vec_swap (left, mid, size);
-        LOG(DEBUG, " left = %p \n right = %p\n after vec_swap (left, mid, size)", left, right);
-    }
-
-    if (right != (char*) base)
-    {
-        right += size;
     }
 
     LOG(DEBUG, " left = %p \n right = %p\n", left, right);
@@ -154,7 +144,7 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
 
     if (right < (char*) base + (nmemb - 1) * size)
     {
-        my_qsort (right, ((char*) base + (nmemb - 1) * size - right) / size + 1, size, compar);
+        my_qsort (right + size, ((char*) base + (nmemb - 1) * size - right) / size, size, compar);
     }
 }
 
