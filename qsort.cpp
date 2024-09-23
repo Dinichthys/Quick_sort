@@ -37,6 +37,9 @@ int compare (const void* const a, const void* const b)
     skip_non_abc (&s1, 1);
     skip_non_abc (&s2, 1);
 
+    LOG(DEBUG, s1);
+    LOG(DEBUG, s2);
+
     while ((tolower(*s1) == tolower(*s2)) && (*s1 != '\0'))
     {
         s1++;
@@ -80,18 +83,20 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
     ASSERT(base   != NULL, "Invalid argument for function qsort\n");
     ASSERT(compar != NULL, "Invalid argument for function qsort\n");
 
-    LOG(INFO, " Parameters for function my_qsort:\n"
-              " base = %p \n nmemb = %lu\n size = %lu\n",
-              base, nmemb, size);
-
     if (nmemb < 2)
     {
         return;
     }
 
+    LOG(INFO, " Parameters for function my_qsort:\n"
+              " base = %p \n nmemb = %lu\n size = %lu\n",
+              base, nmemb, size);
+
     char* left   = (char*) base;
     char* right  = (char*) base + ((nmemb - 1) * size);
-    char* mid    = (char*) base + (nmemb / 2 * size);
+    char* mid    = (char*) base + ( nmemb / 2  * size);
+
+    bool mid_is_swapped = false;
 
     size_t count = 1;
     while (left < right)
@@ -108,7 +113,7 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
 
         LOG(DEBUG, " left = %p \n right = %p\n", left, right);
 
-        while ((left < right) && (compar (right, mid) > 0))
+        while ((left < right) && (compar (right, mid) >= 0))
         {
             right -= size;
         }
@@ -118,43 +123,38 @@ void my_qsort(void *const base, const size_t nmemb, const size_t size,
         if (left < right)
         {
             vec_swap (left, right, size);
-            /*
-            swap (left, right, size);
-            for (size_t i = 0; i < size; i++)
-            {
-                unsigned char change =  left [i];
-                                        left [i] = right [i];
-                                                   right [i] = change;
-            }
-            */
 
-            left  += size;
-            right -= size;
+            mid_is_swapped = (left == mid);
         }
 
         LOG(DEBUG, " left = %p \n right = %p\n", left, right);
     }
 
-    if (left == right)
+    if ((compar (left, mid) < 0) || (mid_is_swapped))
     {
-        if (left > (char*) base)
-        {
-            right -= size;
-        }
-        else
-        {
-            left  += size;
-        }
+        left  += size;
+    }
+    else
+    {
+        vec_swap (left, mid, size);
+        LOG(DEBUG, " left = %p \n right = %p\n after vec_swap (left, mid, size)", left, right);
     }
 
-    if (right > (char*) base)
+    if (right != (char*) base)
     {
-        my_qsort (base, (right - (char*) base) / size + 1, size, compar);
+        right += size;
     }
 
-    if ((char*) base + (nmemb - 1) * size > left)
+    LOG(DEBUG, " left = %p \n right = %p\n", left, right);
+
+    if (left > (char*) base)
     {
-        my_qsort (left, ((char*) base + (nmemb - 1) * size - left) / size + 1, size, compar);
+        my_qsort (base, (left - (char*) base) / size, size, compar);
+    }
+
+    if (right < (char*) base + (nmemb - 1) * size)
+    {
+        my_qsort (right, ((char*) base + (nmemb - 1) * size - right) / size + 1, size, compar);
     }
 }
 
